@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>منصة سوبرسيل | تقارير خدمة العملاء</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#FBF6F6; --panel:#FFFFFF; --ink:#241417; --ink-soft:#6B5457; --line:#EDDBDC;
+  --navy:#9E0F26; --navy-dark:#6E0A1B; --teal:#D41A34; --teal-soft:#FBE3E6;
+  --ok:#1E7D46; --ok-soft:#E4F3E9; --warn:#9C6B00; --warn-soft:#FCF0D6;
+  --bad:#B00020; --bad-soft:#FBE4E8; --info:#3A5A8C; --info-soft:#E9EEF7;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;-webkit-font-smoothing:antialiased;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+
+/* ===== Login ===== */
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,var(--navy) 0%,var(--navy-dark) 55%,#062A3A 100%);position:relative;overflow:hidden;}
+#loginScreen::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg, rgba(255,255,255,.035) 0 2px, transparent 2px 26px);}
+.login-card{position:relative;z-index:1;width:100%;max-width:380px;background:#fff;border-radius:18px;padding:32px 28px;box-shadow:0 20px 60px rgba(0,0,0,.35);}
+.login-logo{text-align:center;margin-bottom:6px;}
+.login-logo .mark{display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--teal),var(--navy));color:#fff;font-weight:800;font-size:20px;margin-bottom:10px;}
+.login-card h1{font-size:17px;text-align:center;margin:0 0 2px;}
+.login-card p.sub{text-align:center;color:var(--ink-soft);font-size:12.5px;margin:0 0 22px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:5px;font-weight:600;}
+.field input, .field select, .field textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px;background:#FCFDFD;color:var(--ink);}
+.field input:focus, .field select:focus, .field textarea:focus{outline:2px solid var(--teal);outline-offset:-1px;border-color:var(--teal);}
+.btn{padding:11px;border:none;border-radius:10px;background:var(--teal);color:#fff;font-size:14px;font-weight:700;width:100%;}
+.btn:disabled{opacity:.6;}
+.btn.navy{background:var(--navy);}
+.btn.outline{background:#fff;border:1px solid var(--line);color:var(--ink-soft);}
+.btn.danger{background:var(--bad);}
+.btn.small{width:auto;padding:7px 12px;font-size:12.5px;}
+.err-msg{color:var(--bad);font-size:12.5px;text-align:center;min-height:16px;margin-top:4px;}
+
+/* ===== App shell ===== */
+#app{display:none;min-height:100vh;}
+.topbar{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-dark) 100%);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:30;}
+.topbar .brand{display:flex;align-items:center;gap:10px;}
+.topbar .mark{width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;}
+.topbar h1{font-size:14.5px;margin:0;font-weight:700;}
+.topbar .role-tag{font-size:10.5px;color:#BFE3E8;}
+.topbar .who{display:flex;align-items:center;gap:10px;font-size:12px;}
+.topbar .who button{background:rgba(255,255,255,.12);color:#fff;border:none;border-radius:8px;padding:6px 10px;font-size:11.5px;}
+
+.tabs{display:flex;gap:6px;padding:10px 12px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:52px;z-index:20;overflow-x:auto;}
+.tab{flex:0 0 auto;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink-soft);font-size:12.5px;font-weight:600;white-space:nowrap;}
+.tab.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+
+.content{max-width:900px;margin:0 auto;padding:16px 14px 50px;}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;}
+.card h2{font-size:14.5px;margin:0 0 14px;display:flex;align-items:center;gap:8px;}
+.card h2 .bar{width:4px;height:16px;background:var(--teal);border-radius:2px;display:inline-block;}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:520px){.row2{grid-template-columns:1fr;}}
+.status-msg{font-size:12px;margin-top:8px;min-height:14px;}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+th,td{padding:8px 6px;text-align:right;border-bottom:1px solid var(--line);}
+th{color:var(--ink-soft);font-weight:700;font-size:11.5px;}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:99px;}
+.pill.on{background:var(--ok-soft);color:var(--ok);} .pill.off{background:var(--bad-soft);color:var(--bad);}
+.badge{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;}
+.badge.ok{background:var(--ok-soft);color:var(--ok);} .badge.warn{background:var(--warn-soft);color:var(--warn);}
+.badge.bad{background:var(--bad-soft);color:var(--bad);} .badge.info{background:var(--info-soft);color:var(--info);}
+.emp-tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--teal-soft);color:var(--teal);margin-inline-end:6px;}
+.icon-btn{border:none;background:none;font-size:11px;font-weight:700;cursor:pointer;padding:3px 6px;}
+.icon-btn.edit{color:var(--teal);} .icon-btn.del{color:var(--bad);} .icon-btn.toggle{color:var(--navy);}
+.empty{text-align:center;padding:26px 10px;color:var(--ink-soft);font-size:13px;}
+.entry{border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin-bottom:8px;background:#FCFDFD;}
+.entry-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.entry-time{font-size:11px;color:var(--ink-soft);}
+.entry-customer{font-size:13.5px;font-weight:700;}
+.entry-meta{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+.entry-notes{font-size:12px;color:var(--ink-soft);margin-top:4px;font-style:italic;}
+.date-pick{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.date-pick input{flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:9px;font-size:13px;}
+.date-pick button{padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:#fff;font-size:12.5px;font-weight:700;color:var(--navy);}
+.export-btn{width:100%;padding:10px;border-radius:10px;border:1px solid var(--navy);background:#fff;color:var(--navy);font-size:13.5px;font-weight:700;margin-bottom:12px;}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+@media(max-width:520px){.stat-grid{grid-template-columns:repeat(2,1fr);}}
+.stat-box{background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 10px;text-align:center;}
+.stat-box .n{font-size:22px;font-weight:800;color:var(--navy);}
+.stat-box .l{font-size:11px;color:var(--ink-soft);margin-top:3px;}
+.stat-box.accent .n{color:var(--teal);}
+.chart-wrap{background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px;margin-bottom:14px;}
+.chart-wrap h3{font-size:12.5px;margin:0 0 10px;color:var(--ink-soft);}
+.checklist{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;}
+.checklist label{display:flex;align-items:center;gap:6px;font-size:12.5px;background:var(--teal-soft);color:var(--teal);padding:6px 10px;border-radius:9px;font-weight:600;}
+.access-note{font-size:11px;color:var(--ink-soft);background:var(--info-soft);border-radius:9px;padding:8px 10px;margin-bottom:10px;}
+.form-section{margin-bottom:18px;padding-bottom:16px;border-bottom:1px dashed var(--line);}
+.form-section:last-of-type{border-bottom:none;margin-bottom:6px;padding-bottom:0;}
+.form-section-label{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px;}
+.form-section-label .num{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--teal);color:#fff;font-size:10px;font-weight:800;}
+.hint{font-size:10.5px;color:var(--ink-soft);margin-top:-6px;margin-bottom:10px;}
+.readonly-banner{background:var(--warn-soft);color:var(--warn);font-size:11.5px;font-weight:700;padding:7px 10px;border-radius:9px;margin-bottom:10px;text-align:center;}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo"><div class="mark">SC</div></div>
+    <h1>منصة سوبرسيل لخدمة العملاء</h1>
+    <p class="sub">Supercell Network · FTTH</p>
+    <div class="field"><label>اسم المستخدم</label><input type="text" id="loginUser" autocomplete="username"></div>
+    <div class="field"><label>كلمة السر</label><input type="password" id="loginPass" autocomplete="current-password"></div>
+    <button class="btn navy" id="loginBtn">تسجيل الدخول</button>
+    <div class="err-msg" id="loginErr"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="brand">
+      <div class="mark">SC</div>
+      <div><h1>منصة سوبرسيل</h1><div class="role-tag" id="roleTag">—</div></div>
+    </div>
+    <div class="who">
+      <span id="whoName">—</span>
+      <button id="logoutBtn">خروج</button>
+    </div>
+  </div>
+  <div class="tabs" id="tabsBar"></div>
+  <div class="content" id="content"></div>
+</div>
+
+<datalist id="visitReasonList">
+  <option value="Recharge Card"><option value="Recharge Card / Migrations up (60-150)">
+  <option value="Recharge Card / Migrations up (60-300)"><option value="Recharge Card / Migrations up (60-1000)">
+  <option value="Recharge Card / Migrations up (150-300)"><option value="Recharge Card / Migrations up (150-1000)">
+  <option value="Recharge Card / Migrations up (300-1000)"><option value="Maintenance">
+  <option value="Installation"><option value="Installation / Hero60Mbps"><option value="Installation / Hero 120Mbps">
+  <option value="Installation / Hero 180Mbps"><option value="Purchase ONT (WiFi)"><option value="Purchase ONU">
+  <option value="Mesh Device">
+</datalist>
+<datalist id="itemNameList">
+  <option value="Hero 60Mbps Renewal 30 Days"><option value="Hero 60Mbps Renewal 90 Days">
+  <option value="Hero 60Mbps Installment System"><option value="Hero 150Mbps Renewal 30 Days">
+  <option value="Hero 150Mbps Renewal 90 Days"><option value="Hero 150Mbps Installment System">
+  <option value="Hero 300Mbps Renewal 30 Days"><option value="Hero 300Mbps Renewal 90 Days">
+  <option value="Hero 300Mbps Installment System"><option value="Hero 1000Mbps Renewal 30 Days">
+  <option value="Hero 1000Mbps Renewal 90 Days"><option value="Hero 1000Mbps Installment System">
+  <option value="Wifi device - ONT"><option value="Mesh device">
+</datalist>
+
+<script>
+const ROLE_LABELS = { super_admin:"المدير العام", office_admin:"مدير المكتب", employee:"موظف", monitor:"فريق المتابعة" };
+const STATUSES = [{v:"Done",cls:"ok"},{v:"In Progress",cls:"warn"},{v:"Pending",cls:"warn"},{v:"Closed",cls:"bad"}];
+let CURRENT_USER = null;
+let ACTIVE_TAB = null;
+let entryEditId = null;
+let charts = {};
+
+function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function nowTimeStr(){ return new Date().toTimeString().slice(0,8); }
+function statusCls(s){ const f=STATUSES.find(x=>x.v===s); return f?f.cls:"info"; }
+function escapeHtml(s){ return String(s??"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+function el(id){ return document.getElementById(id); }
+
+async function api(url, method="GET", body){
+  const opts = { method, headers:{} };
+  if(body!==undefined){ opts.headers["Content-Type"]="application/json"; opts.body=JSON.stringify(body); }
+  const r = await fetch(url, opts);
+  const data = await r.json().catch(()=>({ok:false,error:"استجابة غير صالحة من السيرفر"}));
+  if(!r.ok || data.ok===false){ throw new Error(data.error || "حدث خطأ"); }
+  return data;
+}
+
+// ===================== تسجيل الدخول =====================
+el("loginBtn").addEventListener("click", doLogin);
+el("loginPass").addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
+
+async function doLogin(){
+  const username = el("loginUser").value.trim();
+  const password = el("loginPass").value;
+  const errBox = el("loginErr");
+  errBox.textContent = "";
+  if(!username || !password){ errBox.textContent = "الرجاء إدخال اسم المستخدم وكلمة السر"; return; }
+  const btn = el("loginBtn");
+  btn.disabled = true; btn.textContent = "جارٍ الدخول...";
+  try{
+    const data = await api("/api/auth/login", "POST", { username, password });
+    CURRENT_USER = data.user;
+    showApp();
+  }catch(err){
+    errBox.textContent = err.message;
+  }finally{
+    btn.disabled = false; btn.textContent = "تسجيل الدخول";
+  }
+}
+
+el("logoutBtn").addEventListener("click", async ()=>{
+  await api("/api/auth/logout", "POST");
+  location.reload();
+});
+
+async function boot(){
+  try{
+    const data = await api("/api/auth/me");
+    CURRENT_USER = data.user;
+    showApp();
+  }catch(e){
+    el("loginScreen").style.display = "flex";
+    el("app").style.display = "none";
+  }
+}
+
+function showApp(){
+  el("loginScreen").style.display = "none";
+  el("app").style.display = "block";
+  el("roleTag").textContent = ROLE_LABELS[CURRENT_USER.role] || CURRENT_USER.role;
+  el("whoName").textContent = CURRENT_USER.full_name;
+  buildTabsForRole();
+}
+
+// ===================== التبويبات حسب الدور =====================
+function buildTabsForRole(){
+  let tabs = [];
+  if(CURRENT_USER.role === "super_admin") tabs = [["offices","المكاتب"],["users","المستخدمون"]];
+  else if(CURRENT_USER.role === "office_admin") tabs = [["employees","الموظفون"],["entry","إدخال بيانات"],["merged","الدمج اللحظي"],["stats","الإحصائيات"]];
+  else if(CURRENT_USER.role === "employee") tabs = [["entry","إدخال بيانات"],["merged","الدمج اللحظي"],["stats","الإحصائيات"]];
+  else if(CURRENT_USER.role === "monitor") tabs = [["merged","الدمج اللحظي"],["stats","الإحصائيات"]];
+
+  el("tabsBar").innerHTML = tabs.map((t,i)=>`<div class="tab${i===0?" active":""}" data-tab="${t[0]}">${t[1]}</div>`).join("");
+  document.querySelectorAll(".tab").forEach(tab=>{
+    tab.addEventListener("click", ()=>{
+      document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+      tab.classList.add("active");
+      renderTab(tab.getAttribute("data-tab"));
+    });
+  });
+  renderTab(tabs[0][0]);
+}
+
+function renderTab(tab){
+  ACTIVE_TAB = tab;
+  const c = el("content");
+  c.innerHTML = "";
+  if(tab==="offices") renderOffices(c);
+  else if(tab==="users") renderUsers(c);
+  else if(tab==="employees") renderEmployees(c);
+  else if(tab==="entry") renderEntryForm(c);
+  else if(tab==="merged") renderMerged(c);
+  else if(tab==="stats") renderStats(c);
+}
+
+// ===================== المدير العام: المكاتب =====================
+async function renderOffices(c){
+  c.innerHTML = `
+    <div class="card">
+      <h2><span class="bar"></span>إضافة مكتب جديد</h2>
+      <div class="field"><label>اسم المكتب/الفرع</label><input type="text" id="newOfficeName" placeholder="مثال: Samarra Shop"></div>
+      <button class="btn" id="addOfficeBtn">إضافة المكتب</button>
+      <div class="status-msg" id="officeMsg"></div>
+    </div>
+    <div class="card"><h2><span class="bar"></span>المكاتب الحالية</h2><div id="officesList"><div class="empty">جارٍ التحميل...</div></div></div>
+  `;
+  el("addOfficeBtn").addEventListener("click", async ()=>{
+    const name = el("newOfficeName").value.trim();
+    const msg = el("officeMsg");
+    if(!name){ msg.style.color="#B00020"; msg.textContent="اكتب اسم المكتب"; return; }
+    try{
+      await api("/api/superadmin/offices","POST",{name});
+      el("newOfficeName").value="";
+      msg.style.color="#1E7D46"; msg.textContent="تمت الإضافة";
+      loadOfficesList();
+    }catch(err){ msg.style.color="#B00020"; msg.textContent=err.message; }
+  });
+  loadOfficesList();
+}
+async function loadOfficesList(){
+  const box = el("officesList");
+  const data = await api("/api/superadmin/offices");
+  if(data.offices.length===0){ box.innerHTML='<div class="empty">لا توجد مكاتب بعد</div>'; return; }
+  box.innerHTML = `<table><thead><tr><th>المكتب</th><th>تاريخ الإنشاء</th><th></th></tr></thead><tbody>
+    ${data.offices.map(o=>`<tr>
+      <td>${escapeHtml(o.name)}</td>
+      <td>${new Date(o.created_at).toLocaleDateString("ar-EG")}</td>
+      <td><button class="icon-btn del" data-id="${o.id}">حذف</button></td>
+    </tr>`).join("")}
+  </tbody></table>`;
+  box.querySelectorAll(".del").forEach(b=>b.addEventListener("click", async ()=>{
+    if(!confirm("حذف هذا المكتب سيحذف كل بياناته وموظفيه. متابعة؟")) return;
+    await api("/api/superadmin/offices/"+b.getAttribute("data-id"), "DELETE");
+    loadOfficesList();
+  }));
+}
+
+// ===================== المدير العام: المستخدمون =====================
+async function renderUsers(c){
+  const officesData = await api("/api/superadmin/offices");
+  c.innerHTML = `
+    <div class="card">
+      <h2><span class="bar"></span>إضافة مدير مكتب أو عضو فريق متابعة</h2>
+      <div class="row2">
+        <div class="field"><label>اسم المستخدم (دخول)</label><input type="text" id="nu_username"></div>
+        <div class="field"><label>كلمة السر</label><input type="text" id="nu_password"></div>
+      </div>
+      <div class="field"><label>الاسم الكامل</label><input type="text" id="nu_fullname"></div>
+      <div class="row2">
+        <div class="field"><label>الدور</label>
+          <select id="nu_role">
+            <option value="office_admin">مدير مكتب</option>
+            <option value="employee">موظف (مباشرة لأي مكتب)</option>
+            <option value="monitor">فريق متابعة (قراءة فقط)</option>
+          </select>
+        </div>
+        <div class="field" id="nu_office_wrap"><label>المكتب</label>
+          <select id="nu_office">${officesData.offices.map(o=>`<option value="${o.id}">${escapeHtml(o.name)}</option>`).join("")}</select>
+        </div>
+      </div>
+      <button class="btn" id="addUserBtn">إنشاء الحساب</button>
+      <div class="status-msg" id="userMsg"></div>
+    </div>
+    <div class="card"><h2><span class="bar"></span>الحسابات الحالية</h2><div id="usersList"><div class="empty">جارٍ التحميل...</div></div></div>
+  `;
+  el("nu_role").addEventListener("change", ()=>{
+    const r = el("nu_role").value;
+    el("nu_office_wrap").style.display = (r==="office_admin" || r==="employee") ? "block" : "none";
+  });
+  el("addUserBtn").addEventListener("click", async ()=>{
+    const msg = el("userMsg");
+    const roleVal = el("nu_role").value;
+    const payload = {
+      username: el("nu_username").value.trim(), password: el("nu_password").value,
+      full_name: el("nu_fullname").value.trim(), role: roleVal,
+      office_id: (roleVal==="office_admin" || roleVal==="employee") ? Number(el("nu_office").value) : null
+    };
+    if(!payload.username || !payload.password || !payload.full_name){ msg.style.color="#B00020"; msg.textContent="جميع الحقول مطلوبة"; return; }
+    try{
+      await api("/api/superadmin/users","POST",payload);
+      msg.style.color="#1E7D46"; msg.textContent="تم إنشاء الحساب";
+      ["nu_username","nu_password","nu_fullname"].forEach(id=>el(id).value="");
+      loadUsersList(officesData.offices);
+    }catch(err){ msg.style.color="#B00020"; msg.textContent=err.message; }
+  });
+  loadUsersList(officesData.offices);
+}
+
+async function loadUsersList(offices){
+  const box = el("usersList");
+  const data = await api("/api/superadmin/users");
+  const list = data.users;
+  if(list.length===0){ box.innerHTML='<div class="empty">لا توجد حسابات بعد</div>'; return; }
+  box.innerHTML = list.map(u=>`
+    <div class="entry">
+      <div class="entry-top"><span class="entry-customer">${escapeHtml(u.full_name)}</span><span class="pill ${u.active?"on":"off"}">${u.active?"مفعّل":"معطّل"}</span></div>
+      <div class="entry-meta">${escapeHtml(u.username)} · ${ROLE_LABELS[u.role]}${u.office_name?" · "+escapeHtml(u.office_name):""}</div>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="icon-btn edit" data-id="${u.id}" data-act="edit">تعديل الاسم/كلمة السر</button>
+        <button class="icon-btn toggle" data-id="${u.id}" data-act="toggle">${u.active?"تعطيل":"تفعيل"}</button>
+        <button class="icon-btn del" data-id="${u.id}" data-act="del">حذف</button>
+        ${u.role==="monitor" ? `<button class="icon-btn edit" data-id="${u.id}" data-act="access">تحديد المكاتب المسموحة</button>` : ""}
+      </div>
+      <div id="edit_${u.id}" style="margin-top:8px;display:none;"></div>
+      <div id="access_${u.id}" style="margin-top:8px;display:none;"></div>
+    </div>
+  `).join("");
+
+  box.querySelectorAll("[data-act='edit']").forEach(b=>b.addEventListener("click", ()=>{
+    const uid = b.getAttribute("data-id");
+    const user = list.find(u=>String(u.id)===uid);
+    const wrap = el("edit_"+uid);
+    if(wrap.style.display==="block"){ wrap.style.display="none"; return; }
+    wrap.innerHTML = `
+      <div class="field"><label>الاسم الكامل</label><input type="text" id="eu_fullname_${uid}" value="${escapeHtml(user.full_name)}"></div>
+      <div class="field"><label>اسم المستخدم</label><input type="text" id="eu_username_${uid}" value="${escapeHtml(user.username)}"></div>
+      <div class="field"><label>كلمة سر جديدة (اتركها فارغة لعدم التغيير)</label><input type="text" id="eu_password_${uid}" placeholder="•••••••"></div>
+      <button class="btn small navy" data-save-user="${uid}">حفظ التعديلات</button>
+      <div class="status-msg" id="eu_msg_${uid}"></div>
+    `;
+    wrap.style.display = "block";
+    wrap.querySelector("[data-save-user]").addEventListener("click", async ()=>{
+      const msg = el("eu_msg_"+uid);
+      try{
+        await api("/api/superadmin/users/"+uid, "PUT", {
+          full_name: el("eu_fullname_"+uid).value.trim(),
+          username: el("eu_username_"+uid).value.trim(),
+          password: el("eu_password_"+uid).value
+        });
+        msg.style.color = "#1E7D46"; msg.textContent = "تم الحفظ";
+        loadUsersList(offices);
+      }catch(err){ msg.style.color = "#B00020"; msg.textContent = err.message; }
+    });
+  }));
+  box.querySelectorAll("[data-act='toggle']").forEach(b=>b.addEventListener("click", async ()=>{
+    await api("/api/superadmin/users/"+b.getAttribute("data-id")+"/toggle","PUT");
+    loadUsersList(offices);
+  }));
+  box.querySelectorAll("[data-act='del']").forEach(b=>b.addEventListener("click", async ()=>{
+    if(!confirm("حذف هذا الحساب نهائياً؟")) return;
+    await api("/api/superadmin/users/"+b.getAttribute("data-id"), "DELETE");
+    loadUsersList(offices);
+  }));
+  box.querySelectorAll("[data-act='access']").forEach(b=>b.addEventListener("click", async ()=>{
+    const uid = b.getAttribute("data-id");
+    const wrap = el("access_"+uid);
+    if(wrap.style.display==="block"){ wrap.style.display="none"; return; }
+    const current = await api("/api/superadmin/monitor-access/"+uid);
+    wrap.innerHTML = `<div class="checklist">${offices.map(o=>`
+      <label><input type="checkbox" value="${o.id}" ${current.office_ids.includes(o.id)?"checked":""}> ${escapeHtml(o.name)}</label>
+    `).join("")}</div><button class="btn small navy" data-save="${uid}">حفظ الصلاحيات</button>`;
+    wrap.style.display = "block";
+    wrap.querySelector("[data-save]").addEventListener("click", async ()=>{
+      const ids = Array.from(wrap.querySelectorAll("input:checked")).map(i=>Number(i.value));
+      await api("/api/superadmin/monitor-access","POST",{user_id:Number(uid), office_ids:ids});
+      alert("تم حفظ الصلاحيات");
+    });
+  }));
+}
+
+// ===================== مدير المكتب: الموظفون =====================
+async function renderEmployees(c){
+  c.innerHTML = `
+    <div class="card">
+      <h2><span class="bar"></span>إضافة موظف جديد</h2>
+      <div class="row2">
+        <div class="field"><label>اسم المستخدم (دخول)</label><input type="text" id="ne_username"></div>
+        <div class="field"><label>كلمة السر</label><input type="text" id="ne_password"></div>
+      </div>
+      <div class="field"><label>اسم الموظف الكامل</label><input type="text" id="ne_fullname"></div>
+      <button class="btn" id="addEmpBtn">إنشاء حساب الموظف</button>
+      <div class="status-msg" id="empMsg"></div>
+    </div>
+    <div class="card"><h2><span class="bar"></span>موظفو المكتب</h2><div id="empList"><div class="empty">جارٍ التحميل...</div></div></div>
+  `;
+  el("addEmpBtn").addEventListener("click", async ()=>{
+    const msg = el("empMsg");
+    const payload = { username: el("ne_username").value.trim(), password: el("ne_password").value, full_name: el("ne_fullname").value.trim() };
+    if(!payload.username || !payload.password || !payload.full_name){ msg.style.color="#B00020"; msg.textContent="جميع الحقول مطلوبة"; return; }
+    try{
+      await api("/api/office-admin/employees","POST",payload);
+      msg.style.color="#1E7D46"; msg.textContent="تم إنشاء حساب الموظف";
+      ["ne_username","ne_password","ne_fullname"].forEach(id=>el(id).value="");
+      loadEmpList();
+    }catch(err){ msg.style.color="#B00020"; msg.textContent=err.message; }
+  });
+  loadEmpList();
+}
+async function loadEmpList(){
+  const box = el("empList");
+  const data = await api("/api/office-admin/employees");
+  if(data.employees.length===0){ box.innerHTML='<div class="empty">لا يوجد موظفون بعد</div>'; return; }
+  box.innerHTML = data.employees.map(e=>`
+    <div class="entry">
+      <div class="entry-top"><span class="entry-customer">${escapeHtml(e.full_name)}</span><span class="pill ${e.active?"on":"off"}">${e.active?"مفعّل":"معطّل"}</span></div>
+      <div class="entry-meta">${escapeHtml(e.username)}</div>
+      <div style="margin-top:8px;display:flex;gap:8px;">
+        <button class="icon-btn toggle" data-id="${e.id}" data-act="toggle">${e.active?"تعطيل":"تفعيل"}</button>
+        <button class="icon-btn del" data-id="${e.id}" data-act="del">حذف</button>
+      </div>
+    </div>
+  `).join("");
+  box.querySelectorAll("[data-act='toggle']").forEach(b=>b.addEventListener("click", async ()=>{
+    await api("/api/office-admin/employees/"+b.getAttribute("data-id")+"/toggle","PUT");
+    loadEmpList();
+  }));
+  box.querySelectorAll("[data-act='del']").forEach(b=>b.addEventListener("click", async ()=>{
+    if(!confirm("حذف حساب هذا الموظف؟")) return;
+    await api("/api/office-admin/employees/"+b.getAttribute("data-id"), "DELETE");
+    loadEmpList();
+  }));
+}
+
+// ===================== إدخال بيانات (موظف / مدير مكتب) =====================
+function renderEntryForm(c){
+  entryEditId = null;
+  c.innerHTML = `
+    <div class="card">
+      <h2><span class="bar"></span>إدخال معاملة جديدة</h2>
+      <div class="status-msg" id="editBanner" style="display:none;color:var(--teal);font-weight:700;"></div>
+
+      <div class="form-section">
+        <div class="form-section-label"><span class="num">١</span>التوقيت</div>
+        <div class="row2">
+          <div class="field"><label>التاريخ (Date)</label><input type="date" id="f_date"></div>
+          <div class="field"><label>الوقت (Time)</label><input type="time" id="f_time" step="1"></div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-label"><span class="num">٢</span>بيانات العميل</div>
+        <div class="field"><label>اسم العميل (Coustomer name)</label><input type="text" id="f_customer" placeholder="اسم العميل الكامل"></div>
+        <div class="row2">
+          <div class="field"><label>رقم الهاتف (PhoneNumber)</label><input type="text" id="f_phone" placeholder="07xxxxxxxxx"></div>
+          <div class="field"><label>BG</label><input type="text" id="f_bg" placeholder="bg-2-23-1@smr"></div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-label"><span class="num">٣</span>تفاصيل الخدمة</div>
+        <div class="field"><label>سبب الزيارة (Visit reason)</label><input type="text" id="f_reason" list="visitReasonList" placeholder="اكتب أو اختر من القائمة"></div>
+        <div class="row2">
+          <div class="field"><label>اسم العنصر (Item name)</label><input type="text" id="f_item" list="itemNameList" placeholder="اكتب أو اختر من القائمة"></div>
+          <div class="field"><label>ID</label><input type="text" id="f_id" placeholder="رقم المعاملة/التذكرة"></div>
+        </div>
+        <div class="field"><label>Migrations up</label>
+          <select id="f_migrations"><option value="">—</option><option value="✔️">✔️</option><option value="❌">❌</option></select>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-label"><span class="num">٤</span>المبالغ المالية</div>
+        <div class="row2">
+          <div class="field"><label>السعر (Price)</label><input type="number" id="f_price" step="5" min="0" placeholder="مضاعفات 5 فقط"></div>
+          <div class="field"><label>Revenue Amount</label><input type="number" id="f_revenue" step="5" min="0" placeholder="مضاعفات 5 فقط"></div>
+        </div>
+        <div class="hint">القيم المقبولة: 5، 10، 15، 20 ... (مضاعفات الرقم 5 فقط)</div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-label"><span class="num">٥</span>الحالة والملاحظات</div>
+        <div class="field"><label>الحالة (Status)</label><select id="f_status">${STATUSES.map(s=>`<option value="${s.v}">${s.v}</option>`).join("")}</select></div>
+        <div class="field"><label>ملاحظات (Notes)</label><textarea id="f_notes" placeholder="تفاصيل إضافية (اختياري)"></textarea></div>
+      </div>
+
+      <button class="btn" id="saveEntryBtn">إضافة المعاملة</button>
+      <button class="btn outline" id="cancelEditBtn" style="display:none;margin-top:8px;">إلغاء التعديل</button>
+      <div class="status-msg" id="entryMsg"></div>
+    </div>
+    <div class="card"><h2><span class="bar"></span>معاملاتي اليوم</h2><div id="myList"><div class="empty">جارٍ التحميل...</div></div></div>
+  `;
+  el("f_date").value = todayStr();
+  el("f_time").value = nowTimeStr();
+  el("saveEntryBtn").addEventListener("click", saveEntry);
+  el("cancelEditBtn").addEventListener("click", resetEntryForm);
+  loadMyList();
+}
+
+function readEntryForm(){
+  return {
+    date: el("f_date").value || todayStr(), time: el("f_time").value || nowTimeStr(),
+    customer_name: el("f_customer").value.trim(), phone_number: el("f_phone").value.trim(),
+    bg: el("f_bg").value.trim(), visit_reason: el("f_reason").value.trim(),
+    price: el("f_price").value || null, item_name: el("f_item").value.trim(),
+    ref_id: el("f_id").value.trim(), migrations_up: el("f_migrations").value,
+    revenue_amount: el("f_revenue").value || null, status: el("f_status").value,
+    notes: el("f_notes").value.trim()
+  };
+}
+function resetEntryForm(){
+  entryEditId = null;
+  ["f_customer","f_phone","f_bg","f_reason","f_price","f_item","f_id","f_migrations","f_revenue","f_notes"].forEach(id=>el(id).value="");
+  el("f_date").value = todayStr(); el("f_time").value = nowTimeStr();
+  el("saveEntryBtn").textContent = "إضافة المعاملة";
+  el("cancelEditBtn").style.display = "none";
+  el("editBanner").style.display = "none";
+}
+function isMultipleOf5(v){
+  if(v===null || v===undefined || v==="") return true;
+  const n = Number(v);
+  return Number.isFinite(n) && n % 5 === 0;
+}
+async function saveEntry(){
+  const payload = readEntryForm();
+  const msg = el("entryMsg");
+  if(!payload.customer_name){ msg.style.color="#B00020"; msg.textContent="الرجاء إدخال اسم العميل"; return; }
+  if(!isMultipleOf5(payload.price)){ msg.style.color="#B00020"; msg.textContent="السعر يجب أن يكون من مضاعفات 5 (5، 10، 15 ...)"; return; }
+  if(!isMultipleOf5(payload.revenue_amount)){ msg.style.color="#B00020"; msg.textContent="Revenue Amount يجب أن يكون من مضاعفات 5 (5، 10، 15 ...)"; return; }
+  const btn = el("saveEntryBtn");
+  btn.disabled = true;
+  try{
+    if(entryEditId){ await api("/api/entries/"+entryEditId, "PUT", payload); msg.style.color="#1E7D46"; msg.textContent="تم حفظ التعديل"; }
+    else { await api("/api/entries", "POST", payload); msg.style.color="#1E7D46"; msg.textContent="تمت الإضافة"; }
+    resetEntryForm();
+    loadMyList();
+  }catch(err){ msg.style.color="#B00020"; msg.textContent="تعذر الحفظ: "+err.message; }
+  finally{ btn.disabled = false; }
+}
+async function loadMyList(){
+  const box = el("myList");
+  const data = await api("/api/entries/mine?date="+todayStr());
+  if(data.entries.length===0){ box.innerHTML='<div class="empty">لم تتم إضافة أي معاملة بعد</div>'; return; }
+  box.innerHTML = data.entries.slice().reverse().map(e=>entryCardHtml(e, true)).join("");
+  box.querySelectorAll("[data-act='del']").forEach(b=>b.addEventListener("click", async ()=>{
+    if(!confirm("حذف هذه المعاملة؟")) return;
+    await api("/api/entries/"+b.getAttribute("data-id"), "DELETE");
+    loadMyList();
+  }));
+  box.querySelectorAll("[data-act='edit']").forEach(b=>b.addEventListener("click", ()=>{
+    const entry = data.entries.find(e=>String(e.id)===b.getAttribute("data-id"));
+    if(entry) startEdit(entry);
+  }));
+}
+function startEdit(e){
+  entryEditId = e.id;
+  el("f_date").value = e.date; el("f_time").value = e.time; el("f_customer").value = e.customer_name;
+  el("f_phone").value = e.phone_number||""; el("f_bg").value = e.bg||""; el("f_reason").value = e.visit_reason||"";
+  el("f_price").value = e.price||""; el("f_item").value = e.item_name||""; el("f_id").value = e.ref_id||"";
+  el("f_migrations").value = e.migrations_up||""; el("f_revenue").value = e.revenue_amount||"";
+  el("f_status").value = e.status; el("f_notes").value = e.notes||"";
+  el("saveEntryBtn").textContent = "حفظ التعديل";
+  el("cancelEditBtn").style.display = "block";
+  el("editBanner").style.display = "block";
+  el("editBanner").textContent = "وضع التعديل — جارٍ تحديث معاملة موجودة";
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+function entryCardHtml(e, withActions){
+  return `
+    <div class="entry">
+      <div class="entry-top"><span class="entry-customer">${escapeHtml(e.customer_name)}</span>
+        <span class="entry-time">${e.time}${e.edited?` <em style="font-style:italic;color:var(--ink-soft);font-size:10px;">(معدّل)</em>`:""}</span></div>
+      <div class="entry-meta">${e.employee_name?`<span class="emp-tag">${escapeHtml(e.employee_name)}</span>`:""}${e.phone_number?escapeHtml(e.phone_number)+" · ":""}${escapeHtml(e.visit_reason||"—")} · <span class="badge ${statusCls(e.status)}">${escapeHtml(e.status)}</span></div>
+      ${e.item_name?`<div class="entry-meta">${escapeHtml(e.item_name)}${e.price?" · "+e.price:""}</div>`:""}
+      ${e.notes?`<div class="entry-notes">${escapeHtml(e.notes)}</div>`:""}
+      ${withActions?`<div style="text-align:left;margin-top:4px;"><button class="icon-btn edit" data-act="edit" data-id="${e.id}">تعديل</button><button class="icon-btn del" data-act="del" data-id="${e.id}">حذف</button></div>`:""}
+    </div>`;
+}
+
+// ===================== الدمج اللحظي =====================
+async function renderMerged(c){
+  const isMonitor = CURRENT_USER.role === "monitor";
+  let officeSelectHtml = "";
+  let offices = [];
+  if(isMonitor){
+    const data = await api("/api/monitor/offices");
+    offices = data.offices;
+    if(offices.length===0){ c.innerHTML = '<div class="card"><div class="empty">لا تملك صلاحية الاطلاع على أي مكتب حالياً</div></div>'; return; }
+    officeSelectHtml = `<div class="field"><label>المكتب</label><select id="officeSelect">${offices.map(o=>`<option value="${o.id}">${escapeHtml(o.name)}</option>`).join("")}</select></div>`;
+  }
+  c.innerHTML = `
+    ${isMonitor ? `<div class="readonly-banner">وضع القراءة فقط — لا يمكن التعديل أو الحذف</div><div class="card">${officeSelectHtml}</div>` : ""}
+    <div class="card">
+      <div class="date-pick"><input type="date" id="mergeDate"><button id="mergeTodayBtn">اليوم</button></div>
+      <button class="export-btn" id="mergeExportBtn">⬇ تصدير كملف Excel</button>
+      <h2><span class="bar"></span>السجل المدمج (مرتب حسب الوقت)</h2>
+      <div id="mergedList"><div class="empty">جارٍ التحميل...</div></div>
+    </div>
+  `;
+  el("mergeDate").value = todayStr();
+  el("mergeTodayBtn").addEventListener("click", ()=>{ el("mergeDate").value = todayStr(); loadMerged(); });
+  el("mergeDate").addEventListener("change", loadMerged);
+  if(isMonitor) el("officeSelect").addEventListener("change", loadMerged);
+  el("mergeExportBtn").addEventListener("click", ()=>{
+    const date = el("mergeDate").value || todayStr();
+    if(isMonitor){ window.location = `/api/monitor/offices/${el("officeSelect").value}/export?date=${date}`; }
+    else { window.location = `/api/office/export?date=${date}`; }
+  });
+  loadMerged();
+  if(ACTIVE_TAB==="merged"){
+    clearInterval(window.__mergePoll);
+    window.__mergePoll = setInterval(()=>{ if(ACTIVE_TAB==="merged") loadMerged(); }, 5000);
+  }
+}
+async function loadMerged(){
+  const box = el("mergedList");
+  if(!box) return;
+  const date = el("mergeDate").value || todayStr();
+  const isMonitor = CURRENT_USER.role === "monitor";
+  try{
+    const data = isMonitor
+      ? await api(`/api/monitor/offices/${el("officeSelect").value}/merged?date=${date}`)
+      : await api(`/api/office/merged?date=${date}`);
+    if(data.entries.length===0){ box.innerHTML = '<div class="empty">لا توجد بيانات لهذا اليوم بعد</div>'; return; }
+    box.innerHTML = data.entries.map(e=>entryCardHtml(e, false)).join("");
+  }catch(err){ box.innerHTML = `<div class="empty">${escapeHtml(err.message)}</div>`; }
+}
+
+// ===================== الإحصائيات =====================
+async function renderStats(c){
+  const isMonitor = CURRENT_USER.role === "monitor";
+  const showEmployeeBreakdown = CURRENT_USER.role === "office_admin" || isMonitor;
+  let officeSelectHtml = "";
+  if(isMonitor){
+    const data = await api("/api/monitor/offices");
+    if(data.offices.length===0){ c.innerHTML = '<div class="card"><div class="empty">لا تملك صلاحية الاطلاع على أي مكتب حالياً</div></div>'; return; }
+    officeSelectHtml = `<div class="field"><label>المكتب</label><select id="statsOfficeSelect">${data.offices.map(o=>`<option value="${o.id}">${escapeHtml(o.name)}</option>`).join("")}</select></div>`;
+  }
+  c.innerHTML = `
+    ${isMonitor ? `<div class="card">${officeSelectHtml}</div>` : ""}
+    <div class="card">
+      <div class="date-pick"><input type="date" id="statsDate"><button id="statsTodayBtn">اليوم</button></div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="n" id="st_total">0</div><div class="l">إجمالي المعاملات</div></div>
+        <div class="stat-box accent"><div class="n" id="st_activation">0</div><div class="l">عدد التفعيل</div></div>
+        <div class="stat-box accent"><div class="n" id="st_installation">0</div><div class="l">عدد التنصيب</div></div>
+        <div class="stat-box accent"><div class="n" id="st_maintenance">0</div><div class="l">عدد الصيانة</div></div>
+        <div class="stat-box"><div class="n" id="st_completed">0</div><div class="l">طلبات مكتملة</div></div>
+        <div class="stat-box"><div class="n" id="st_inprogress">0</div><div class="l">قيد العمل</div></div>
+        <div class="stat-box"><div class="n" id="st_closed">0</div><div class="l">مغلقة/ملغاة</div></div>
+      </div>
+    </div>
+    <div class="chart-wrap"><h3>توزيع نوع الزيارة</h3><canvas id="chartReason" height="200"></canvas></div>
+    <div class="chart-wrap"><h3>حالة الطلبات</h3><canvas id="chartStatus" height="200"></canvas></div>
+    ${showEmployeeBreakdown ? `<div class="chart-wrap"><h3>توزيع المعاملات حسب الموظف (نسبة كل موظف من الإجمالي)</h3><canvas id="chartEmp" height="200"></canvas></div>` : ""}
+  `;
+  el("statsDate").value = todayStr();
+  el("statsTodayBtn").addEventListener("click", ()=>{ el("statsDate").value = todayStr(); loadStats(); });
+  el("statsDate").addEventListener("change", loadStats);
+  if(isMonitor) el("statsOfficeSelect").addEventListener("change", loadStats);
+  loadStats();
+}
+async function loadStats(){
+  const date = el("statsDate").value || todayStr();
+  const isMonitor = CURRENT_USER.role === "monitor";
+  const showEmployeeBreakdown = CURRENT_USER.role === "office_admin" || isMonitor;
+  const data = isMonitor
+    ? await api(`/api/monitor/offices/${el("statsOfficeSelect").value}/stats?date=${date}`)
+    : await api(`/api/office/stats?date=${date}`);
+  const s = data.stats;
+  el("st_total").textContent = s.total;
+  el("st_activation").textContent = s.activation;
+  el("st_installation").textContent = s.installation;
+  el("st_maintenance").textContent = s.maintenance;
+  el("st_completed").textContent = s.completed;
+  el("st_inprogress").textContent = s.in_progress;
+  el("st_closed").textContent = s.closed_cancelled;
+
+  drawChart("chartReason","doughnut",["تفعيل","تنصيب","صيانة","أخرى"],[s.activation,s.installation,s.maintenance,s.other_reason],["#D41A34","#9E0F26","#9C6B00","#C9B3B6"]);
+  drawChart("chartStatus","doughnut",["مكتملة","قيد العمل","مغلقة/ملغاة"],[s.completed,s.in_progress,s.closed_cancelled],["#1E7D46","#9C6B00","#B00020"]);
+  if(showEmployeeBreakdown){
+    const empLabels = Object.keys(s.by_employee);
+    const empPalette = ["#D41A34","#9E0F26","#6E0A1B","#E6798C","#B5838D","#F2AFB9","#4A2A2E","#8C6B6E"];
+    drawChart("chartEmp","doughnut",empLabels,empLabels.map(k=>s.by_employee[k]),empLabels.map((_,i)=>empPalette[i%empPalette.length]));
+  }
+}
+function drawChart(canvasId, type, labels, data, colors){
+  const ctx = el(canvasId);
+  if(!ctx) return;
+  if(charts[canvasId]) charts[canvasId].destroy();
+  charts[canvasId] = new Chart(ctx, {
+    type, data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 2, borderColor: "#fff" }] },
+    options: { cutout: "58%", plugins:{ legend:{ display: true, position:"bottom", labels:{font:{size:11}, boxWidth:12, padding:10} } } }
+  });
+}
+
+
+boot();
+</script>
+</body>
+</html>
